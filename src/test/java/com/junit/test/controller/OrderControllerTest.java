@@ -9,8 +9,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest; 
-import org.springframework.boot.test.mock.mockito.MockBean; 
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.junit.test.entity.Order;
@@ -20,35 +21,47 @@ import com.junit.test.service.OrderService;
 public class OrderControllerTest {
 
     @Autowired
-    MockMvc mockMvc; 
+    private MockMvc mockMvc;
 
     @MockBean
-    OrderService orderService; 
+    private OrderService orderService;
 
     @Test
-    @DisplayName("成功 : APIを通じた注文キャンセル (200 OK)")
+    @DisplayName("성공 : API를 통한 주문 취소 (200 OK)")
     void cancelOrder_Api_Success() throws Exception {
-        Order cancelledOrder = new Order(1L, "user@test.com", "CANCELLED");
-        given(orderService.cancelOrder(1L, "user@test.com")).willReturn(cancelledOrder);
+        // given
+        Long orderId = 1L;
+        String userEmail = "user@test.com";
+        
+        Order cancelledOrder = new Order(userEmail, "CANCELLED");
+        // 엔티티에 id 생성자가 없으므로 Reflection을 사용하여 ID 주입 (테스트 목적)
+        ReflectionTestUtils.setField(cancelledOrder, "id", orderId);
 
-        mockMvc.perform(post("/api/orders/1/cancel")
-                .param("userEmail", "user@test.com"))
-                .andDo(print()) 
-                .andExpect(status().isOk()) 
-                .andExpect(content().string("注文がキャンセルされました。")); 
+        given(orderService.cancelOrder(orderId, userEmail)).willReturn(cancelledOrder);
+
+        // when & then
+        mockMvc.perform(post("/api/orders/" + orderId + "/cancel")
+                .param("userEmail", userEmail))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().string("주문이 취소되었습니다."));
     }
 
     @Test
-    @DisplayName("失敗 : 権限なし (400 Bad Request)")
+    @DisplayName("실패 : 본인 주문이 아닌 경우 (400 Bad Request)")
     void cancelOrder_Api_Fail_NotOwner() throws Exception {
-       
-        given(orderService.cancelOrder(1L, "other@test.com"))
-                .willThrow(new IllegalStateException("본인 주문만 취소 가능"));
+        // given
+        Long orderId = 1L;
+        String otherEmail = "other@test.com";
 
-        mockMvc.perform(post("/api/orders/1/cancel")
-                .param("userEmail", "other@test.com"))
+        given(orderService.cancelOrder(orderId, otherEmail))
+                .willThrow(new IllegalStateException("본인 주문만 취소 가능합니다."));
+
+        // when & then
+        mockMvc.perform(post("/api/orders/" + orderId + "/cancel")
+                .param("userEmail", otherEmail))
                 .andDo(print())
-                .andExpect(status().isBadRequest()) 
-                .andExpect(content().string("본인 주문만 취소 가능"));
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("본인 주문만 취소 가능합니다."));
     }
 }

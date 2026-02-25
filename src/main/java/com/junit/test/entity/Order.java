@@ -1,23 +1,28 @@
 package com.junit.test.entity;
 
-public class Order {
-    
-    private Long id;
-    private String userEmail;
-    private String status; // CREATED, CANCELLED
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor; 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-    public Order(Long orderId, String userEmail, String status) {
-        this.id = orderId;
+@Entity
+@Getter
+@Table(name = "orders")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor 
+public class Order {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String userEmail;
+    private String status;
+
+    public Order(String userEmail, String status) {
         this.userEmail = userEmail;
         this.status = status;
-    }
-
-    public String getUserEmail() {
-        return userEmail;
-    }
-
-    public String getStatus() {
-        return status;
     }
 
     public void cancel() {

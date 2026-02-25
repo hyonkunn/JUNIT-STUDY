@@ -1,6 +1,10 @@
 package com.junit.test.repository;
 
-public interface PasswordEncoder {
+import org.springframework.stereotype.Component;
 
-        String encode(String rawPassword);
+@Component 
+public class PasswordEncoder {
+    public String encode(String password) {
+        return "encoded_" + password;
+    }
 }

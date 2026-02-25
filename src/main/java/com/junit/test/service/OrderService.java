@@ -26,6 +26,8 @@ public class OrderService {
             throw new IllegalStateException("이미 취소된 주문");
         }
 
+        //
+
         order.cancel();
 
         return repository.save(order);
